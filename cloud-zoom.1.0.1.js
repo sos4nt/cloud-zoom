@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Cloud Zoom V1.0.0
+// Cloud Zoom V1.0.1
 // (c) 2010 by R Cecco. <http://www.professorcloud.com>
 // MIT License
 //
@@ -19,26 +19,26 @@
     }
 
     function CloudZoom(jWin, opts) {
-        var sImg = $('img', jWin),
-            img1, img2;
+        var sImg = $('img', jWin);
+		var	img1;
+		var	img2;
         var zoomDiv = null;
-        var $mouseTrap = null;
-        var lens = null;
-        var controlTimer = 0;
-        var zoomImage;
+		var	$mouseTrap = null;
+		var	lens = null;
+		var	$tint = null;
+		var	softFocus = null;
+		var	$ie6Fix = null;
+		var	zoomImage;
+        var controlTimer = 0;      
         var cw, ch;
-        var destU = 0,
-            destV = 0,
-            currV = 0,
-            currU = 0;
-        var $tint = null;
-        var softFocus = null;
-        var $ie6Fix = null;
+        var destU = 0;
+      	var	destV = 0;
+        var currV = 0;
+        var currU = 0;      
         var filesLoaded = 0;
-        var mx = -1,
-            my; // -1 means mouse pos hasn't been read yet 
-        var ctx = this;
-        var zw;
+        var mx,
+            my; 
+        var ctx = this, zw;
         // Display an image loading message. This message gets deleted when the images have loaded and the zoom init function is called.
         // We add a small delay before the message is displayed to avoid the message flicking on then off again virtually immediately if the
         // images load really fast, e.g. from the cache. 
@@ -47,7 +47,7 @@
             //						 <img src="/images/loading.gif"/>
             if ($mouseTrap === null) {
                 var w = jWin.width();
-                jWin.append(format('<div style="width:%0px;position:absolute;top:75%;left:%1px;text-align:center" class="cloud-zoom-loading" >Loading...</div>', w / 3, (w / 2) - (w / 6))).find(':last').css('opacity', 0.5);
+                jWin.parent().append(format('<div style="width:%0px;position:absolute;top:75%;left:%1px;text-align:center" class="cloud-zoom-loading" >Loading...</div>', w / 3, (w / 2) - (w / 6))).find(':last').css('opacity', 0.5);
             }
         }, 200);
 
@@ -65,8 +65,7 @@
             //$mouseTrap.unbind();
             if (lens) {
                 lens.remove();
-                lens = null;
-                mx = -1;
+                lens = null;             
             }
             if ($tint) {
                 $tint.remove();
@@ -78,7 +77,7 @@
             }
             ie6FixRemove();
 
-            $('.cloud-zoom-loading', jWin).remove();
+            $('.cloud-zoom-loading', jWin.parent()).remove();
         };
 
 
@@ -102,18 +101,20 @@
 
         // This is called when the zoom window has faded out so it can be removed.
         this.fadedOut = function () {
-            if (zoomDiv) {
+            
+			if (zoomDiv) {
                 zoomDiv.remove();
                 zoomDiv = null;
             }
-            ie6FixRemove();
+			 this.removeBits();
+            //ie6FixRemove();
         };
 
         this.controlLoop = function () {
             if (lens) {
                 var x = (mx - sImg.offset().left - (cw * 0.5)) >> 0;
                 var y = (my - sImg.offset().top - (ch * 0.5)) >> 0;
-                //	console.log(sun);
+               
                 if (x < 0) {
                     x = 0;
                 }
@@ -138,13 +139,7 @@
                 currU += (destU - currU) / opts.smoothMove;
                 currV += (destV - currV) / opts.smoothMove;
 
-                zoomDiv.css('background-position', (-(currU >> 0) + 'px ') + (-(currV >> 0) + 'px'));
-                // Only turn on cursor when first mouse pos has been recorded (and not inside mode).
-                if (mx != -1 && opts.position !== 'inside') {
-                    lens.css({
-                        display: 'block'
-                    });
-                }
+                zoomDiv.css('background-position', (-(currU >> 0) + 'px ') + (-(currV >> 0) + 'px'));              
             }
             controlTimer = setTimeout(function () {
                 ctx.controlLoop();
@@ -167,7 +162,7 @@
         /* Init function start.  */
         this.init = function () {
             // Remove loading message (if present);
-            $('.cloud-zoom-loading', jWin).remove();
+            $('.cloud-zoom-loading', jWin.parent()).remove();
 
 
 /* Add a box (mouseTrap) over the small image to trap mouse events.
@@ -187,26 +182,28 @@
             //////////////////////////////////////////////////////////////////////					
             $mouseTrap.bind('mouseleave', this, function (event) {
                 clearTimeout(controlTimer);
-                event.data.removeBits();
-                zoomDiv.fadeOut(300, function () {
+                //event.data.removeBits();                
+				if(lens) { lens.fadeOut(299); }
+				if($tint) { $tint.fadeOut(299); }
+				if(softFocus) { softFocus.fadeOut(299); }
+				zoomDiv.fadeOut(300, function () {
                     ctx.fadedOut();
-                });
+                });																
                 return false;
             });
             //////////////////////////////////////////////////////////////////////			
             $mouseTrap.bind('mouseenter', this, function (event) {
-
+				mx = event.pageX;
+                my = event.pageY;
                 zw = event.data;
                 if (zoomDiv) {
                     zoomDiv.stop(true, false);
                     zoomDiv.remove();
                 }
 
-                var xPos = 0,
-                    yPos = 0;
-                xPos += opts.adjustX;
-                yPos += opts.adjustY;
-                //var	xPos = $mouseTrap().left;
+                var xPos = opts.adjustX,
+                    yPos = opts.adjustY;
+                             
                 var siw = sImg.outerWidth();
                 var sih = sImg.outerHeight();
 
@@ -289,14 +286,15 @@
                 // Init tint layer if needed. (Not relevant if using inside mode)			
                 if (opts.tint) {
                     lens.css('background', 'url("' + sImg.attr('src') + '")');
-                    $tint = jWin.append(format('<div style="position:absolute; left:0px; top:0px; width:%0px; height:%1px; background-color:%2;" />', sImg.outerWidth(), sImg.outerHeight(), opts.tint)).find(':last');
-                    $tint.css('opacity', opts.tintOpacity);
-                    noTrans = true;
+                    $tint = jWin.append(format('<div style="display:none;position:absolute; left:0px; top:0px; width:%0px; height:%1px; background-color:%2;" />', sImg.outerWidth(), sImg.outerHeight(), opts.tint)).find(':last');
+                    $tint.css('opacity', opts.tintOpacity);                    
+					noTrans = true;
+					$tint.fadeIn(500);
 
                 }
                 if (opts.softFocus) {
                     lens.css('background', 'url("' + sImg.attr('src') + '")');
-                    softFocus = jWin.append(format('<div style="position:absolute; display:none;top:2px; left:2px; width:%0px; height:%1px;" />', sImg.outerWidth() - 2, sImg.outerHeight() - 2, opts.tint)).find(':last');
+                    softFocus = jWin.append(format('<div style="position:absolute;display:none;top:2px; left:2px; width:%0px; height:%1px;" />', sImg.outerWidth() - 2, sImg.outerHeight() - 2, opts.tint)).find(':last');
                     softFocus.css('background', 'url("' + sImg.attr('src') + '")');
                     softFocus.css('opacity', 0.5);
                     noTrans = true;
@@ -304,8 +302,9 @@
                 }
 
                 if (!noTrans) {
-                    lens.css('opacity', opts.lensOpacity);
+                    lens.css('opacity', opts.lensOpacity);										
                 }
+				if ( opts.position !== 'inside' ) { lens.fadeIn(500); }
 
                 // Start processing. 
                 zw.controlLoop();
