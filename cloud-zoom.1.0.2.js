@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Cloud Zoom V1.0.1
+// Cloud Zoom V1.0.2
 // (c) 2010 by R Cecco. <http://www.professorcloud.com>
 // MIT License
 //
@@ -32,7 +32,7 @@
         var controlTimer = 0;      
         var cw, ch;
         var destU = 0;
-      	var	destV = 0;
+		var	destV = 0;
         var currV = 0;
         var currU = 0;      
         var filesLoaded = 0;
@@ -332,30 +332,10 @@
             document.execCommand("BackgroundImageCache", false, true);
         } catch (e) {}
         this.each(function () {
-            // Parse values in Rel attribute. Probably could have used eval here!
-            var str = $(this).attr('rel').replace(/\s+/g, ''),
-                opts;
-            var splitOpts = str.split(','),
-                relOpts = {},
-                splitOpt;
-            for (var i = 0; i < splitOpts.length; i++) {
-                splitOpt = splitOpts[i].split(':');
-                if (splitOpt[1] === 'true') {
-                    splitOpt[1] = true;
-                }
-                else if (splitOpt[1] === 'false') {
-                    splitOpt[1] = false;
-                }
-                else if (isNaN(splitOpt[1])) {
-                    // Get rid of quotes around string values.
-                    splitOpt[1] = splitOpt[1].replace(/['"]/g, '');
-                }
-                else {
-                    splitOpt[1] = 1 * splitOpt[1];
-                }
-                relOpts[splitOpt[0]] = splitOpt[1];
-            }
-
+			var	relOpts, opts;
+			// Hmm...eval...slap on wrist.
+			eval('var	a = {' + $(this).attr('rel') + '}');
+			relOpts = a;
             if ($(this).is('.cloud-zoom')) {
                 $(this).css({
                     'position': 'relative',
